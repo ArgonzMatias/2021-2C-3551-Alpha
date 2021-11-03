@@ -190,7 +190,7 @@ namespace TGC.MonoGame.TP
             quad = new Quad(new Vector3(0f, yPositionFloor, 0f), Vector3.Up, Vector3.Forward, xScaleFloor, zScaleFloor);
 
             SoundEffect.MasterVolume = 0.4f; //<-- Debe ser Configurable
-            MediaPlayer.Volume = 0.3f; //<-- Debe ser Configurable
+            MediaPlayer.Volume = 0.35f; //<-- Debe ser Configurable
 
             MarblePosition = new Vector3(-10f, -10f, 0f); //<- Original
             MarblePosition = new Vector3(-85f, 10f, 67.5f); //<- Para Probar
