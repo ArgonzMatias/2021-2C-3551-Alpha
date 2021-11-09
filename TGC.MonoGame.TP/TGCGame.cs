@@ -793,7 +793,7 @@ namespace TGC.MonoGame.TP
             //Jugador
             DrawMeshes(MarbleWorld, MarbleTexture, Esfera);
             //Moneda Counter
-            DrawCenterTextY("Monedas: " ,  0, 1);
+            //DrawCenterTextY("Monedas: " ,  0, 1);
 
             ////Se agregan la esferas
             DrawMeshes( ( Matrix.CreateScale(0.1f) * Matrix.CreateRotationY(Rotation * 0.2f) * Matrix.CreateTranslation(new Vector3(-50f, -10f, 0f)) ), MagmaTexture, Esfera);
@@ -1207,7 +1207,7 @@ namespace TGC.MonoGame.TP
             space.Remove(sender.Entity);
             return;
         }
-        private void DrawCenterTextY(string msg, float Y, float escala)
+        /*private void DrawCenterTextY(string msg, float Y, float escala)
         {
             var W = GraphicsDevice.Viewport.Width;
             var H = GraphicsDevice.Viewport.Height;
@@ -1216,7 +1216,7 @@ namespace TGC.MonoGame.TP
                 Matrix.CreateScale(escala) * Matrix.CreateTranslation((W - size.X) / 2, Y, 0));
             SpriteBatch.DrawString(Font, msg, new Vector2(0, 0), Color.Black);
             SpriteBatch.End();
-        }
+        }*/
 
         private void UpdatePlatformsColliders(float TotalTime)
         {
