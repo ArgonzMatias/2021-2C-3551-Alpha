@@ -16,8 +16,8 @@ namespace TGC.MonoGame.TP
         {
             GraphicsDevice = graphicsDevice;
             SpriteBatch = new SpriteBatch(graphicsDevice);
-            //Font = Content.Load<SpriteBatch>("Fonts/Basic");
-            //BackgroundTexture = Content.Load<Texture2D>("background");
+            Font = Content.Load<SpriteBatch>("Fonts/Basic");
+            BackgroundTexture = Content.Load<Texture2D>("background");
             Height = graphicsDevice.Viewport.Height;
         }
         public void Draw(GameTime gameTime)
