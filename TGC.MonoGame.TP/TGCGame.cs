@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -8,6 +9,8 @@ using System.Collections.Generic;
 using TGC.MonoGame.TP.Quads;
 using TGC.MonoGame.TP.SkyBoxs;
 using TGC.MonoGame.TP.MonedasItem;
+//using TGC.MonoGame.Samples.Viewer.GUI.Modifiers;
+//using TGC.MonoGame.Samples.Geometries;
 using BEPUphysics;
 using BEPUphysics.Entities.Prefabs;
 using BEPUphysics.Entities;
@@ -16,6 +19,7 @@ using BEPUphysics.BroadPhaseEntries;
 using BEPUphysics.NarrowPhaseSystems.Pairs;
 using BEPUphysics.CollisionRuleManagement;
 using Microsoft.Xna.Framework.Audio;
+
 
 namespace TGC.MonoGame.TP
 {
@@ -26,12 +30,15 @@ namespace TGC.MonoGame.TP
     /// </summary>
     public class TGCGame : Game
     {
+        private const int ShadowmapSize = 2048;
         public const string ContentFolder3D = "Models/";
         public const string ContentFolderEffects = "Effects/";
         public const string ContentFolderMusic = "Music/";
         public const string ContentFolderSounds = "Sounds/";
         public const string ContentFolderSpriteFonts = "SpriteFonts/";
         public const string ContentFolderTextures = "Textures/";
+
+        private TargetCamera TargetLightCamera { get; set; }
 
         /// <summary>
         ///     Constructor del juego.
@@ -104,6 +111,7 @@ namespace TGC.MonoGame.TP
         public Quad quad { get; set; }
         private SkyBox skybox { get; set; }
 
+
         private Box[] DynamicPlatformColliders;
         private Box[] DynamicLavaColliders;
         private Sphere MarbleSphere;
@@ -152,6 +160,14 @@ namespace TGC.MonoGame.TP
         public CollisionGroupPair MarblePlatformGroupPair { get; private set; }
         public CollisionGroupPair LavaMarbleGroupPair { get; private set; }
         public Box[] SpikesColliders { get; private set; }
+        private Effect DebugTextureEffect { get; set; }
+        private RenderTarget2D ShadowMapRenderTarget;
+
+        private Vector3 LightPosition { get; set; }
+        private readonly float LightCameraNearPlaneDistance = 5f;
+        private readonly float LightCameraFarPlaneDistance = 3000f;
+        private Matrix QuadShadowsWorld;
+        //private FullScreenQuad FullScreenQuad;
 
         public struct PowerUp
         {
@@ -243,6 +259,9 @@ namespace TGC.MonoGame.TP
 
             space.Add(MarbleSphere);
             space.ForceUpdater.Gravity = new BEPUutilities.Vector3(0f, Gravity, 0f);
+            TargetLightCamera = new TargetCamera(1f, LightPosition, Vector3.Zero);
+            TargetLightCamera.BuildProjection(1f, LightCameraNearPlaneDistance, LightCameraFarPlaneDistance,
+                MathHelper.PiOver2);
 
             base.Initialize();
         }
@@ -523,6 +542,36 @@ namespace TGC.MonoGame.TP
             OrangeLiquid = Content.Load<Texture2D>(ContentFolderTextures + "Orange_Liquid");
             VolcanicStone = Content.Load<Texture2D>(ContentFolderTextures + "volcanic_stone");
 
+            /*Effect.Parameters["ambientColor"].SetValue(new Vector3(0.25f, 0.0f, 0.0f));
+            Effect.Parameters["diffuseColor"].SetValue(new Vector3(0.1f, 0.1f, 0.6f));
+            Effect.Parameters["specularColor"].SetValue(new Vector3(1f, 1f, 1f));
+
+            Effect.Parameters["KAmbient"].SetValue(0.1f);
+            Effect.Parameters["KDiffuse"].SetValue(1.0f);
+            Effect.Parameters["KSpecular"].SetValue(0.8f);
+            Effect.Parameters["shininess"].SetValue(16.0f);
+
+            Modifiers = new IModifier[]
+           {
+                new FloatModifier("KA", Effect.Parameters["KAmbient"], 0.2f, 0f, 1f),
+                new FloatModifier("KD", Effect.Parameters["KDiffuse"], 0.7f, 0f, 1f),
+                new FloatModifier("KS", Effect.Parameters["KSpecular"], 0.4f, 0f, 1f),
+                new FloatModifier("Shininess", Effect.Parameters["shininess"], 4.0f, 1f, 64f),
+                new ColorModifier("Ambient Color", Effect.Parameters["ambientColor"], new Color(0.25f, 0f, 0f)),
+                new ColorModifier("Diffuse Color", Effect.Parameters["diffuseColor"], new Color(0.1f, 0.1f, 0.6f)),
+                new ColorModifier("Specular Color", Effect.Parameters["specularColor"], Color.White)
+           };*/
+            /*
+            DebugTextureEffect = Content.Load<Effect>(ContentFolderEffects + "DebugTexture");
+            DebugTextureEffect.Parameters["nearPlaneDistance"].SetValue(LightCameraNearPlaneDistance);
+            DebugTextureEffect.Parameters["farPlaneDistance"].SetValue(LightCameraFarPlaneDistance);
+            DebugTextureEffect.CurrentTechnique = DebugTextureEffect.Techniques["DebugDepth"];
+            */
+            ShadowMapRenderTarget = new RenderTarget2D(GraphicsDevice, ShadowmapSize, ShadowmapSize, false,
+                SurfaceFormat.Single, DepthFormat.Depth24, 0, RenderTargetUsage.PlatformContents);
+
+            //FullScreenQuad = new FullScreenQuad(GraphicsDevice);
+
             BGM = Content.Load<Song>(ContentFolderMusic + "SM64BowserRoad");
             MediaPlayer.Play(BGM);
 
@@ -603,6 +652,25 @@ namespace TGC.MonoGame.TP
             UpdatePlatformsColliders(totalGameTime);
 
             space.Update();
+            /*var lavaPosition1 = new Vector3(40f, -20f, 110f);
+            var lavaPosition2 = new Vector3(22f, -18f, 110f);
+            var lavaPosition3 = new Vector3(-57.5f, 40f, 17f);
+            var lavaPosition4 = new Vector3(-37f, 16f + (4f * MathF.Cos((totalGameTime * 2f + MathHelper.PiOver2) + 4)), 17f);
+            var lavaPosition5 = new Vector3(-32f, 16f + (4f * MathF.Cos((totalGameTime * 2f + MathHelper.PiOver2) + 3)), 17f);
+            var lavaPosition6 = new Vector3(-27f, 16f + (4f * MathF.Cos((totalGameTime * 2f + MathHelper.PiOver2) + 2)), 17f);
+            var lavaPosition7 = new Vector3(-22f, 16f + (4f * MathF.Cos((totalGameTime * 2f + MathHelper.PiOver2) + 1)), 17f);
+            var lavaPosition8 = new Vector3(-17f, 16f + (4f * MathF.Cos(totalGameTime * 2f + MathHelper.PiOver2)), 17f);
+
+
+            Effect.Parameters["lightPosition"].SetValue(lavaPosition3);
+            Effect.Parameters["lightPosition"].SetValue(lavaPosition2);
+            Effect.Parameters["lightPosition"].SetValue(lavaPosition1);
+            Effect.Parameters["lightPosition"].SetValue(lavaPosition4);
+            Effect.Parameters["lightPosition"].SetValue(lavaPosition5);
+            Effect.Parameters["lightPosition"].SetValue(lavaPosition6);
+            Effect.Parameters["lightPosition"].SetValue(lavaPosition7);
+            Effect.Parameters["lightPosition"].SetValue(lavaPosition8);
+            Effect.Parameters["eyePosition"].SetValue(Camera.Position);*/
 
             float currentMarbleVelocity = DefaultSpeed;
             //float maxVelocity = currentTypeMarbleVelocity * 2f;
@@ -1086,7 +1154,8 @@ namespace TGC.MonoGame.TP
         {
             // Libero los recursos.
             Content.Unload();
-
+            //FullScreenQuad.Dispose();
+            ShadowMapRenderTarget.Dispose();
             base.UnloadContent();
         }
 
@@ -1181,7 +1250,43 @@ namespace TGC.MonoGame.TP
                 death = false;
             }
         }
+        private void DrawShadows()
+        {
+            #region Pass 1
 
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+            // Set the render target as our shadow map, we are drawing the depth into this texture
+            GraphicsDevice.SetRenderTarget(ShadowMapRenderTarget);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Black, 1f, 0);
+
+            Effect.CurrentTechnique = Effect.Techniques["DepthPass"];
+
+            // We get the base transform for each mesh
+           
+
+            #endregion
+
+            #region Pass 2
+
+            // Set the render target as null, we are drawing on the screen!
+            GraphicsDevice.SetRenderTarget(null);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.CornflowerBlue, 1f, 0);
+
+            Effect.CurrentTechnique = Effect.Techniques["DrawShadowedPCF"];
+            Effect.Parameters["shadowMap"].SetValue(ShadowMapRenderTarget);
+            Effect.Parameters["lightPosition"].SetValue(LightPosition);
+            Effect.Parameters["shadowMapSize"].SetValue(Vector2.One * ShadowmapSize);
+            Effect.Parameters["LightViewProjection"].SetValue(TargetLightCamera.View * TargetLightCamera.Projection);
+            
+            
+            #endregion
+
+            // Debug our shadowmap!
+            // Show a simple quad with the texture
+            DebugTextureEffect.Parameters["World"].SetValue(QuadShadowsWorld);
+            DebugTextureEffect.Parameters["baseTexture"].SetValue(ShadowMapRenderTarget);
+            //FullScreenQuad.Draw(DebugTextureEffect);
+        }
         private void HandleCheckpointCollision(EntityCollidable sender, Collidable other, CollidablePairHandler pair)
         {
             BEPUutilities.Vector3 pos = sender.Entity.Position;
@@ -1263,4 +1368,4 @@ namespace TGC.MonoGame.TP
     }
 }
 
-// idea obstaculo: El cartel puede ser un obstaculo que si lo hacemos rotar el jugador tendria que evitarlo
+// idea obstaculo: El cartel puede ser un obstaculo
