@@ -73,6 +73,7 @@ namespace TGC.MonoGame.TP
         private Effect Effect { get; set; }
         public Effect TextureEffect { get; set; }
         public Effect LavaEffect { get; set; }
+        public Effect DentroDeLavaEffect { get; set; }
         public Effect SkyboxEffect { get; set; }
         public Texture2D NormalTexture { get; private set; }
         private Texture2D MarbleTexture { get; set; }
@@ -161,6 +162,7 @@ namespace TGC.MonoGame.TP
         public CollisionGroupPair LavaMarbleGroupPair { get; private set; }
         public Box[] SpikesColliders { get; private set; }
         private Effect DebugTextureEffect { get; set; }
+        private RenderTarget2D RenderTarget { get; set; }
         private RenderTarget2D ShadowMapRenderTarget;
 
         private Vector3 LightPosition { get; set; }
@@ -209,7 +211,9 @@ namespace TGC.MonoGame.TP
             MediaPlayer.Volume = 0.35f; //<-- Debe ser Configurable
 
             MarblePosition = new Vector3(-10f, -10f, 0f); //<- Original
-            MarblePosition = new Vector3(-85f, 10f, 67.5f); //<- Para Probar
+            //MarblePosition = new Vector3(-85f, 10f, 67.5f); //<- Para Probar
+            //MarblePosition = new Vector3(65f, -13f, 112f); // mostrar lava
+            //MarblePosition = new Vector3(-43.5f, 15f, 17f);
             RespawnPosition = MarblePosition;
 
             MarbleVelocity = Vector3.Zero;
@@ -515,6 +519,7 @@ namespace TGC.MonoGame.TP
             TextureEffect = Content.Load<Effect>(ContentFolderEffects + "TextureShader");
 
             LavaEffect = Content.Load<Effect>(ContentFolderEffects + "LavaShader");
+            //DentroDeLavaEffect = Content.Load<Effect>(ContentFolderEffects + "LavaEffect");
 
             SkyboxEffect = Content.Load<Effect>(ContentFolderEffects + "SkyBox");
 
@@ -567,6 +572,7 @@ namespace TGC.MonoGame.TP
             DebugTextureEffect.Parameters["farPlaneDistance"].SetValue(LightCameraFarPlaneDistance);
             DebugTextureEffect.CurrentTechnique = DebugTextureEffect.Techniques["DebugDepth"];
             */
+            RenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height, false, SurfaceFormat.Color, DepthFormat.Depth24);
             ShadowMapRenderTarget = new RenderTarget2D(GraphicsDevice, ShadowmapSize, ShadowmapSize, false,
                 SurfaceFormat.Single, DepthFormat.Depth24, 0, RenderTargetUsage.PlatformContents);
 
@@ -739,9 +745,13 @@ namespace TGC.MonoGame.TP
 
             if (TocandoLava)
             {
-                RespawnTimer -= deltaTime;
-                if(RespawnTimer < 0f)
+                  DateTime startTimerContact = DateTime.Now;
+                float startTime = startTimerContact.Second;
+                float finishTime = startTimerContact.Second + RespawnTimer;
+                if (finishTime < startTime)
                     death = true;
+                //DentroDeLavaEffect.CurrentTechnique = DentroDeLavaEffect.Techniques["PostProcessing"];
+                //DentroDeLavaEffect.Parameters["ModelTexture"].SetValue(RenderTarget);
             }
 
             float moduloVelocidad = MathF.Sqrt(MathF.Pow(MarbleSphere.AngularVelocity.X, 2) + MathF.Pow(MarbleSphere.AngularVelocity.Z, 2));
