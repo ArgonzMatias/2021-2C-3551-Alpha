@@ -255,9 +255,8 @@ namespace TGC.MonoGame.TP
 
             space.Add(MarbleSphere);
             space.ForceUpdater.Gravity = new BEPUutilities.Vector3(0f, Gravity, 0f);
-            TargetLightCamera = new TargetCamera(1f, LightPosition, Vector3.Zero);
-            TargetLightCamera.BuildProjection(1f, LightCameraNearPlaneDistance, LightCameraFarPlaneDistance,
-                MathHelper.PiOver2);
+            //TargetLightCamera = new TargetCamera(1f, LightPosition, Vector3.Zero);
+            //TargetLightCamera.BuildProjection(1f, LightCameraNearPlaneDistance, LightCameraFarPlaneDistanc, MathHelper.PiOver2);
 
             base.Initialize();
         }
@@ -624,7 +623,7 @@ namespace TGC.MonoGame.TP
             //UpdateLightPosition(totalGameTime);
 
             space.Update();
-
+            /*
 
             Effect.Parameters["lightPosition"].SetValue(lavaPosition3);
             Effect.Parameters["lightPosition"].SetValue(lavaPosition2);
@@ -1136,7 +1135,7 @@ namespace TGC.MonoGame.TP
             // Libero los recursos.
             Content.Unload();
             //FullScreenQuad.Dispose();
-            ShadowMapRenderTarget.Dispose();
+            
             base.UnloadContent();
         }
 
