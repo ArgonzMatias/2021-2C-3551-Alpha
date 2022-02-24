@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using TGC.MonoGame.TP.Quads;
 using TGC.MonoGame.TP.SkyBoxs;
 using TGC.MonoGame.TP.MonedasItem;
+//using TGC.MonoGame.Samples.Viewer.GUI.Modifiers;
+//using TGC.MonoGame.Samples.Geometries;
 using BEPUphysics;
 using BEPUphysics.Entities.Prefabs;
 using BEPUphysics.Entities;
@@ -18,6 +20,7 @@ using BEPUphysics.CollisionRuleManagement;
 using Microsoft.Xna.Framework.Audio;
 using System;
 using TGC.MonoGame.Quads;
+
 
 namespace TGC.MonoGame.TP
 {
@@ -162,15 +165,6 @@ namespace TGC.MonoGame.TP
         public CollisionGroupPair MarblePlatformGroupPair { get; private set; }
         public CollisionGroupPair LavaMarbleGroupPair { get; private set; }
         public Box[] SpikesColliders { get; private set; }
-        private Effect DebugTextureEffect { get; set; }
-            private RenderTarget2D RenderTarget { get; set; }
-        private RenderTarget2D ShadowMapRenderTarget;
-
-        private Vector3 LightPosition { get; set; }
-        private readonly float LightCameraNearPlaneDistance = 5f;
-        private readonly float LightCameraFarPlaneDistance = 3000f;
-        //private Matrix QuadShadowsWorld;
-        //private FullScreenQuad FullScreenQuad;
 
         public struct PowerUp
         {
@@ -546,27 +540,6 @@ namespace TGC.MonoGame.TP
             OrangeLiquid = Content.Load<Texture2D>(ContentFolderTextures + "Orange_Liquid");
             VolcanicStone = Content.Load<Texture2D>(ContentFolderTextures + "volcanic_stone");
 
-            //Bling phong 
-
-             Effect.Parameters["ambientColor"].SetValue(new Vector3(0.25f, 0.0f, 0.0f));
-            Effect.Parameters["diffuseColor"].SetValue(new Vector3(0.1f, 0.1f, 0.6f));
-            Effect.Parameters["specularColor"].SetValue(new Vector3(1f, 1f, 1f));
-
-            Effect.Parameters["KAmbient"].SetValue(0.2f);
-            Effect.Parameters["KDiffuse"].SetValue(1.0f);
-            Effect.Parameters["KSpecular"].SetValue(0.9f);
-            Effect.Parameters["shininess"].SetValue(17.0f);
-
-          
-
-            RenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height, false, SurfaceFormat.Color, DepthFormat.Depth24);
-
-            ShadowMapRenderTarget = new RenderTarget2D(GraphicsDevice, ShadowmapSize, ShadowmapSize, false,
-                SurfaceFormat.Single, DepthFormat.Depth24, 0, RenderTargetUsage.PlatformContents);
-            //LightBox = new CubePrimitive(GraphicsDevice, 5, Color.White);
-
-            //FullScreenQuad = new FullScreenQuad(GraphicsDevice);
-
             BGM = Content.Load<Song>(ContentFolderMusic + "SM64BowserRoad");
             MediaPlayer.Play(BGM);
 
@@ -651,14 +624,6 @@ namespace TGC.MonoGame.TP
             //UpdateLightPosition(totalGameTime);
 
             space.Update();
-            /*var lavaPosition1 = new Vector3(40f, -20f, 110f);
-            var lavaPosition2 = new Vector3(22f, -18f, 110f);
-            var lavaPosition3 = new Vector3(-57.5f, 40f, 17f);
-            var lavaPosition4 = new Vector3(-37f, 16f + (4f * MathF.Cos((totalGameTime * 2f + MathHelper.PiOver2) + 4)), 17f);
-            var lavaPosition5 = new Vector3(-32f, 16f + (4f * MathF.Cos((totalGameTime * 2f + MathHelper.PiOver2) + 3)), 17f);
-            var lavaPosition6 = new Vector3(-27f, 16f + (4f * MathF.Cos((totalGameTime * 2f + MathHelper.PiOver2) + 2)), 17f);
-            var lavaPosition7 = new Vector3(-22f, 16f + (4f * MathF.Cos((totalGameTime * 2f + MathHelper.PiOver2) + 1)), 17f);
-            var lavaPosition8 = new Vector3(-17f, 16f + (4f * MathF.Cos(totalGameTime * 2f + MathHelper.PiOver2)), 17f);
 
 
             Effect.Parameters["lightPosition"].SetValue(lavaPosition3);
@@ -745,10 +710,8 @@ namespace TGC.MonoGame.TP
 
             if (TocandoLava)
             {
-                DateTime startTimerContact = DateTime.Now;
-                float startTime = startTimerContact.Second;
-                float finishTime = startTimerContact.Second + RespawnTimer;
-                if (finishTime < startTime)
+                RespawnTimer -= deltaTime;
+                if(RespawnTimer < 0f)
                     death = true;
                 //DentroDeLavaEffect.CurrentTechnique = DentroDeLavaEffect.Techniques["PostProcessing"];
                 //DentroDeLavaEffect.Parameters["ModelTexture"].SetValue(RenderTarget);
@@ -1267,62 +1230,8 @@ namespace TGC.MonoGame.TP
                 DeathSFX.Play();
                 death = false;
             }
-            
         }
-        /*private void DrawShadows()
-        {
 
-            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-            
-            GraphicsDevice.SetRenderTarget(ShadowMapRenderTarget);
-            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Black, 1f, 0);
-
-            Effect.CurrentTechnique = Effect.Techniques["DepthPass"];
-
-            
-            var modelMeshesBaseTransforms = new Matrix[Model.Bones.Count];
-            Model.CopyAbsoluteBoneTransformsTo(modelMeshesBaseTransforms);
-            foreach (var modelMesh in Model.Meshes)
-            {
-                foreach (var part in modelMesh.MeshParts)
-                    part.Effect = Effect;
-                var worldMatrix = modelMeshesBaseTransforms[modelMesh.ParentBone.Index];
-                Effect.Parameters["WorldViewProjection"]
-                    .SetValue(worldMatrix * TargetLightCamera.View * TargetLightCamera.Projection);
-                modelMesh.Draw();
-            }
-
-            GraphicsDevice.SetRenderTarget(null);
-            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.CornflowerBlue, 1f, 0);
-
-            Effect.CurrentTechnique = Effect.Techniques["DrawShadowedPCF"];
-            Effect.Parameters["baseTexture"].SetValue(BasicEffect.Texture);
-            Effect.Parameters["shadowMap"].SetValue(ShadowMapRenderTarget);
-            Effect.Parameters["lightPosition"].SetValue(LightPosition);
-            Effect.Parameters["shadowMapSize"].SetValue(Vector2.One * ShadowmapSize);
-            Effect.Parameters["LightViewProjection"].SetValue(TargetLightCamera.View * TargetLightCamera.Projection);
-            foreach (var modelMesh in Model.Meshes)
-            {
-                foreach (var part in modelMesh.MeshParts)
-                    part.Effect = Effect;
-
-                var worldMatrix = modelMeshesBaseTransforms[modelMesh.ParentBone.Index];
-
-                Effect.Parameters["WorldViewProjection"].SetValue(worldMatrix * Camera.View * Camera.Projection);
-                Effect.Parameters["World"].SetValue(worldMatrix);
-                Effect.Parameters["InverseTransposeWorld"].SetValue(Matrix.Transpose(Matrix.Invert(worldMatrix)));
-
-                modelMesh.Draw();
-            }*/
-
-            //LightBox.Draw(Matrix.CreateTranslation(LightPosition), Camera.View, Camera.Projection);
-
-        
-        public void SetLightPosition(Vector3 position)
-        {
-           SunWorld = Matrix.CreateTranslation(position)*Matrix.CreateScale(3f);
-            Effect.Parameters["lightPosition"].SetValue(position);
-        }
         private void HandleCheckpointCollision(EntityCollidable sender, Collidable other, CollidablePairHandler pair)
         {
             BEPUutilities.Vector3 pos = sender.Entity.Position;
@@ -1404,4 +1313,4 @@ namespace TGC.MonoGame.TP
     }
 }
 
-// idea obstaculo: El cartel puede ser un obstaculo que si lo hacemos rotar el jugador tendria que evitarlo
+// idea obstaculo: El cartel puede ser un obstaculo
